@@ -95,3 +95,9 @@ result= check_nvme(8)
 
 
 print(result)
+
+import os
+
+output = os.popen("nvidia-smi -L").read()
+
+print(output)
