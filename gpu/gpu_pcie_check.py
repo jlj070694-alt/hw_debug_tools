@@ -1,7 +1,7 @@
 import subprocess
 import re
 
-EXPECTED_SPEED = "32GT/s"
+EXPECTED_SPEED = "64GT/s"
 EXPECTED_WIDTH = "x16"
 
 def run_command(command):
