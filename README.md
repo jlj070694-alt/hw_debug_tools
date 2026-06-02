@@ -1,300 +1,340 @@
 # HW Debug Tools
 
-Hardware Debug Automation Toolkit for NVIDIA HGX / H100 / GB200 / GB300 Platforms
+Hardware Debug Automation and Diagnosis Toolkit for NVIDIA HGX Platforms
 
 ## Overview
 
-HW Debug Tools is a Python-based hardware validation and debug automation framework designed for AI server platforms.
+HW Debug Tools is a Python-based hardware validation, debug automation, and diagnosis framework designed for AI server platforms.
 
 The toolkit automates common troubleshooting tasks encountered during:
 
 * Manufacturing Test
 * Hardware Validation
-* System Bring-up
+* System Bring-Up
 * Production Debug
 * Customer Support
 
 Supported Platforms:
 
 * NVIDIA HGX H100
+* NVIDIA B200
 * NVIDIA GB200
 * NVIDIA GB300
-* Supermicro AI Systems
 
 ---
 
-## Features
+# Features
 
-### GPU Automation
+## Automation Modules
+
+### GPU
 
 * GPU Detection Check
 * GPU Health Check
-* GPU PCIe Link Check
-* GPU XID/SXID Error Check
+* GPU PCIe Check
+* GPU XID/SXID Analysis
 
-### E1.S Automation
+### E1.S
 
 * Drive Detection Check
-* PCIe Speed Check
-* PCIe Link Check
+* Speed Check
+* PCIe Check
 * Slot Mapping
 * Health Check
 * Debug Bundle Collection
 
-### CX8 Automation
+### CX8
 
 * CX8 Detection Check
 * Link Status Check
 * MAC Address Check
-* Firmware Version Check
-* PCIe Link Check
-* Error Log Check
+* Firmware Check
+* PCIe Check
+* Error Analysis
 
-### BF3 Automation
+### BF3
 
 * BF3 Detection Check
-* BF3 Firmware Check
-* BF3 Network Check
-* BF3 PCIe Check
-* BF3 Error Check
-* BF3 Health Check
-* BF3 Debug Bundle Collection
+* Firmware Check
+* Network Check
+* PCIe Check
+* Error Analysis
+* Health Check
+* Debug Bundle Collection
 
-### Sensor Automation
+### Sensors
 
 * Sensor Count Check
 * Missing Sensor Detection
 * Sensor Health Check
-* Good Node vs Bad Node Comparison
+* Sensor Comparison
 * Sensor Report Generation
 
----
+### PCIe
 
-## Project Structure
-
-```text
-hw_debug_tools/
-│
-├── debug.py
-│
-├── gpu/
-│   ├── gpu_count.py
-│   ├── gpu_health.py
-│   ├── gpu_xid_check.py
-│   └── gpu_pcie_check.py
-│
-├── e1s/
-│   ├── e1s_detect.py
-│   ├── e1s_speed_check.py
-│   ├── e1s_pcie_check.py
-│   ├── e1s_slot_mapping.py
-│   ├── e1s_health_check.py
-│   └── e1s_debug_bundle.py
-│
-├── cx8/
-│   ├── cx8_count.py
-│   ├── cx8_link_status.py
-│   ├── cx8_mac_check.py
-│   ├── cx8_pcie_check.py
-│   ├── cx8_fw_check.py
-│   └── cx8_error_check.py
-│
-├── bf3/
-│   ├── bf3_detect.py
-│   ├── bf3_fw_check.py
-│   ├── bf3_network_check.py
-│   ├── bf3_pcie_check.py
-│   ├── bf3_error_check.py
-│   ├── bf3_health_check.py
-│   └── bf3_debug_bundle.py
-│
-├── sensors/
-│   ├── sensor_count.py
-│   ├── sensor_missing.py
-│   ├── sensor_health.py
-│   ├── sensor_compare.py
-│   ├── sensor_report.py
-│   └── expected_sensors.txt
-│
-└── logs/
-```
+* PCIe Topology Collection
+* PCIe Topology Parsing
+* PCIe Topology Comparison
+* Golden Topology Validation
 
 ---
 
-## Usage
+# Diagnosis Engine
 
-Launch the interactive debug menu:
+The Diagnosis Engine automatically combines multiple automation results and provides root cause suggestions.
+
+Supported Diagnosis Workflows:
+
+### E1.S Missing
 
 ```bash
-python3 debug.py
+python3 diagnosis/e1s_drop_orchestrator.py
 ```
 
-Example:
+Possible Root Causes:
 
-```text
-===== HW DEBUG TOOLS =====
-
-1. GPU
-2. E1S
-3. CX8
-4. BF3
-5. Sensors
-
-0. Exit
-```
-
-Select a category and execute the desired automation script.
+* Drive Failure
+* Slot Failure
+* Backplane Failure
+* Cable Failure
+* PCIe Switch Failure
+* Bianca/Mainboard Failure
 
 ---
 
-## Requirements
-
-### Operating Systems
-
-* RHEL 9.x
-* Rocky Linux 9.x
-* Ubuntu 22.04
-* Ubuntu 24.04
-
-### Required Packages
+### E1.S Speed Drop
 
 ```bash
-dnf install pciutils ethtool ipmitool nvme-cli
+python3 diagnosis/e1s_speed_drop.py
 ```
 
-or
+Possible Root Causes:
 
-```bash
-apt install pciutils ethtool ipmitool nvme-cli
-```
-
-### Python
-
-```bash
-python3 --version
-```
-
-Recommended:
-
-```text
-Python 3.9+
-```
+* Drive Speed Drop
+* PCIe Link Width Drop
+* Signal Integrity Issue
+* Backplane Issue
+* PCIe Switch Issue
 
 ---
 
-## Example Use Cases
-
-### E1.S Missing Drive
-
-Expected:
-
-```text
-8 NVMe Drives
-```
-
-Detected:
-
-```text
-7 NVMe Drives
-```
-
-Automation:
+### GPU Missing
 
 ```bash
-python3 e1s/e1s_detect.py
+python3 diagnosis/gpu_missing.py
 ```
+
+Possible Root Causes:
+
+* Driver Issue
+* GPU PCIe Issue
+* HGX Baseboard Issue
+* PCIe Topology Issue
 
 ---
 
-### GPU PCIe Speed Drop
-
-Expected:
-
-```text
-32GT/s x16
-```
-
-Detected:
-
-```text
-16GT/s x8
-```
-
-Automation:
+### CX8 Link Down
 
 ```bash
-python3 gpu/gpu_pcie_check.py
+python3 diagnosis/cx8_link_down.py
 ```
+
+Possible Root Causes:
+
+* Cable Issue
+* OSFP Issue
+* Peer Port Issue
+* CX8 PCIe Issue
+* IO Board Issue
+
+---
+
+### BF3 Failure
+
+```bash
+python3 diagnosis/bf3_failure.py
+```
+
+Possible Root Causes:
+
+* DPU OS Issue
+* BF3 Firmware Issue
+* PCIe Link Issue
+* Network Issue
+* PCIe Topology Issue
 
 ---
 
 ### Sensor Missing
 
-Expected:
-
-```text
-116 Sensors
+```bash
+python3 diagnosis/sensor_missing.py
 ```
 
-Detected:
+Possible Root Causes:
 
-```text
-114 Sensors
-```
+* BMC Issue
+* FRU Mapping Issue
+* Missing Hardware Device
+* Sensor Configuration Issue
 
-Automation:
+---
+
+### Platform Health Check
 
 ```bash
-python3 sensors/sensor_missing.py
+python3 diagnosis/platform_health_check.py
+```
+
+One-click platform validation:
+
+* GPU
+* E1.S
+* CX8
+* BF3
+* Sensors
+* PCIe Topology
+
+---
+
+# Project Structure
+
+```text
+hw_debug_tools/
+
+├── debug.py
+├── diagnosis.py
+
+├── gpu/
+├── e1s/
+├── cx8/
+├── bf3/
+├── sensors/
+├── pcie/
+
+├── diagnosis/
+
+│   ├── e1s_drop_orchestrator.py
+│   ├── e1s_speed_drop.py
+│   ├── gpu_missing.py
+│   ├── cx8_link_down.py
+│   ├── bf3_failure.py
+│   ├── sensor_missing.py
+│   ├── platform_health_check.py
+│   └── full_debug_bundle.py
+
+├── logs/
+
+└── README.md
 ```
 
 ---
 
-### BF3 Network Failure
+# User Interface
 
-Example Error:
-
-```text
-DPU network diag failed with exit code 4
-```
-
-Automation:
+## Automation Menu
 
 ```bash
-python3 bf3/bf3_network_check.py
+python3 debug.py
+```
+
+```text
+1. GPU
+2. E1.S
+3. CX8
+4. BF3
+5. Sensors
+6. PCIe
 ```
 
 ---
 
-## Future Roadmap
+## Diagnosis Menu
 
-### Phase 2
+```bash
+python3 diagnosis.py
+```
 
-* Automatic Root Cause Analysis
+```text
+1. E1.S Missing
+2. E1.S Speed Drop
+3. GPU Missing
+4. CX8 Link Down
+5. Sensor Missing
+6. BF3 Failure
+7. Platform Health Check
+8. Full Debug Bundle
+```
+
+---
+
+# Golden Topology System
+
+Generate topology from a known good node:
+
+```bash
+python3 pcie/collect_topology.py
+```
+
+Save as:
+
+```text
+pcie/golden/golden_topology.txt
+```
+
+Compare against current node:
+
+```bash
+python3 pcie/compare_topology.py
+```
+
+This helps identify:
+
+* Missing GPUs
+* Missing NVMe Devices
+* Missing CX8 Devices
+* Missing BF3 Devices
+* Shared PCIe Branch Failures
+
+---
+
+# Future Roadmap
+
+## Phase 2
+
+* Automatic Root Cause Scoring
+* Confidence Level Calculation
+* Topology Visualization
 * HTML Report Generation
-* CSV Report Export
-* Log Parser Framework
-* Platform Auto Detection
+* CSV Export
 
-### Phase 3
+## Phase 3
 
-* GUI Interface (Tkinter)
+* Tkinter GUI
 * Web Dashboard
-* Golden Node Comparison
-* AI-Assisted Debug Recommendation
+* REST API
+* Multi-Node Comparison
+* Golden Node Database
+
+## Phase 4
+
+* AI-Assisted Diagnosis
+* Automated Corrective Action Suggestions
+* Historical Failure Pattern Learning
 
 ---
 
-## Author
+# Author
 
 Jialiang Ji
 
 System Engineer
 
-Specializing in:
+Areas of Expertise:
 
 * NVIDIA HGX Systems
-* H100 / GB200 / GB300 Validation
+* GB200 / GB300 Validation
 * Manufacturing Test Automation
 * Hardware Debug Automation
-* Python & Linux Development
+* Python Development
+* Linux System Validation
