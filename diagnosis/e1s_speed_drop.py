@@ -34,8 +34,14 @@ def analyze_output(output):
 
     return "UNKNOWN"
 
-def generate_suggestion(results):
-    print("\n===== E1.S SPEED DROP DIAGNOSIS =====\n")
+def calculate_root_cause_score(results):
+    scores = {
+        "Drive Issue": 0,
+        "Backplane / Cable / Slot Issue": 0,
+        "PCIe Switch / Bianca / Mainboard Issue": 0,
+        "Firmware / Driver / Test Environment Issue": 0,
+        "BMC / Sensor / FRU Reporting Issue": 0,
+    }
 
     e1s_speed = results.get("E1.S Speed Check")
     e1s_pcie = results.get("E1.S PCIe Check")
@@ -45,65 +51,161 @@ def generate_suggestion(results):
     gpu_pcie = results.get("GPU PCIe Check")
     sensor_count = results.get("Sensor Count Check")
 
-    if e1s_speed == "FAIL" and e1s_pcie == "FAIL" and topology == "PASS":
-        print("Possible Root Cause:")
-        print("- E1.S drive / slot / backplane / cable issue")
-        print("\nReason:")
-        print("- E1.S speed/PCIe check failed.")
-        print("- Topology comparison did not find missing upstream devices.")
-        print("- Issue may be limited to E1.S storage path.")
-        print("\nSuggested Action:")
-        print("1. Swap the drive.")
+    if e1s_speed == "FAIL":
+        scores["Backplane / Cable / Slot Issue"] += 30
+        scores["Drive Issue"] += 20
+
+    if e1s_pcie == "FAIL":
+        scores["Backplane / Cable / Slot Issue"] += 30
+        scores["PCIe Switch / Bianca / Mainboard Issue"] += 20
+
+    if e1s_health == "FAIL":
+        scores["Drive Issue"] += 20
+        scores["Backplane / Cable / Slot Issue"] += 20
+
+    if topology == "FAIL":
+        scores["PCIe Switch / Bianca / Mainboard Issue"] += 40
+
+    if cx8_pcie == "FAIL":
+        scores["PCIe Switch / Bianca / Mainboard Issue"] += 25
+
+    if gpu_pcie == "FAIL":
+        scores["PCIe Switch / Bianca / Mainboard Issue"] += 25
+
+    if sensor_count == "FAIL":
+        scores["BMC / Sensor / FRU Reporting Issue"] += 30
+
+    if e1s_speed == "PASS" and e1s_pcie == "PASS":
+        scores["Firmware / Driver / Test Environment Issue"] += 20
+
+    return scores
+
+
+def print_root_cause_score(scores):
+    print("\n===== ROOT CAUSE SCORE =====\n")
+
+    ranked = sorted(
+        scores.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    for cause, score in ranked:
+        print(f"{cause:<45} {score}%")
+
+    top_cause, top_score = ranked[0]
+
+    print("\nMost Likely Root Cause:")
+    print(f"- {top_cause} ({top_score}%)")
+
+
+def generate_suggestion(results):
+    print("\n===== E1.S SPEED DROP DIAGNOSIS =====\n")
+
+    scores = calculate_root_cause_score(results)
+    print_root_cause_score(scores)
+
+    top_cause = max(scores, key=scores.get)
+
+    print("\n===== SUGGESTED ACTION =====\n")
+
+    if top_cause == "Backplane / Cable / Slot Issue":
+        print("1. Swap the E1.S drive first.")
         print("2. If issue follows the drive, replace the drive.")
-        print("3. If issue follows the slot, replace/check backplane or cable.")
+        print("3. If issue follows the slot, check backplane / cable / slot.")
+        print("4. Re-run e1s/e1s_speed_check.py after replacement.")
 
-    elif e1s_speed == "FAIL" and topology == "FAIL":
-        print("Possible Root Cause:")
-        print("- PCIe topology / upstream switch / Bianca / mainboard issue")
-        print("\nReason:")
-        print("- E1.S speed drop detected.")
-        print("- PCIe topology mismatch was also detected.")
-        print("\nSuggested Action:")
-        print("1. Compare current topology with golden node.")
-        print("2. Check whether missing/down-trained E1.S shares branch with CX8/GPU.")
-        print("3. Check PCIe switch path, Bianca, or mainboard.")
+    elif top_cause == "Drive Issue":
+        print("1. Swap with a known-good drive.")
+        print("2. Check NVMe smart-log.")
+        print("3. If issue follows drive, replace the drive.")
 
-    elif e1s_speed == "FAIL" and (cx8_pcie == "FAIL" or gpu_pcie == "FAIL"):
-        print("Possible Root Cause:")
-        print("- Broader PCIe signal integrity / platform configuration issue")
-        print("\nReason:")
-        print("- E1.S has speed drop.")
-        print("- CX8 or GPU PCIe also has abnormal link status.")
-        print("\nSuggested Action:")
-        print("1. Check PCIe training and BIOS PCIe settings.")
-        print("2. Compare lspci -vv with good node.")
-        print("3. Check upstream PCIe switch / board-level signal integrity.")
+    elif top_cause == "PCIe Switch / Bianca / Mainboard Issue":
+        print("1. Run pcie/compare_topology.py.")
+        print("2. Compare lspci -t with a known-good node.")
+        print("3. Check whether E1.S and CX8/GPU share the same missing PCIe branch.")
+        print("4. If multiple downstream devices are affected, check PCIe switch / Bianca / mainboard.")
 
-    elif e1s_health == "FAIL" and sensor_count == "FAIL":
-        print("Possible Root Cause:")
-        print("- BMC / FRU / sensor / platform reporting issue")
-        print("\nReason:")
-        print("- E1.S health failed and sensor count is also abnormal.")
-        print("\nSuggested Action:")
+    elif top_cause == "BMC / Sensor / FRU Reporting Issue":
         print("1. Run sensors/sensor_missing.py.")
-        print("2. Check BMC/HMC/FRU data.")
+        print("2. Check BMC / HMC / FRU information.")
         print("3. Confirm drive presence from both OS and BMC side.")
 
-    elif e1s_speed == "PASS":
-        print("Result:")
-        print("- No E1.S speed drop detected by current automation.")
-        print("\nSuggested Action:")
-        print("1. Re-run the original failing test.")
-        print("2. Check whether issue is intermittent.")
-        print("3. Collect debug bundle if failure happens again.")
-
     else:
-        print("Result:")
-        print("- E1.S speed drop diagnosis is inconclusive.")
-        print("\nSuggested Action:")
-        print("1. Run e1s/e1s_debug_bundle.py.")
-        print("2. Compare current topology with golden topology.")
-        print("3. Check dmesg for NVMe / PCIe / AER errors.")
+        print("1. Re-run the failing test.")
+        print("2. Check test environment and driver/firmware version.")
+        print("3. Collect debug bundle with e1s/e1s_debug_bundle.py.")
+
+# def generate_suggestion(results):
+#     print("\n===== E1.S SPEED DROP DIAGNOSIS =====\n")
+
+#     e1s_speed = results.get("E1.S Speed Check")
+#     e1s_pcie = results.get("E1.S PCIe Check")
+#     e1s_health = results.get("E1.S Health Check")
+#     topology = results.get("PCIe Topology Compare")
+#     cx8_pcie = results.get("CX8 PCIe Check")
+#     gpu_pcie = results.get("GPU PCIe Check")
+#     sensor_count = results.get("Sensor Count Check")
+
+#     if e1s_speed == "FAIL" and e1s_pcie == "FAIL" and topology == "PASS":
+#         print("Possible Root Cause:")
+#         print("- E1.S drive / slot / backplane / cable issue")
+#         print("\nReason:")
+#         print("- E1.S speed/PCIe check failed.")
+#         print("- Topology comparison did not find missing upstream devices.")
+#         print("- Issue may be limited to E1.S storage path.")
+#         print("\nSuggested Action:")
+#         print("1. Swap the drive.")
+#         print("2. If issue follows the drive, replace the drive.")
+#         print("3. If issue follows the slot, replace/check backplane or cable.")
+
+#     elif e1s_speed == "FAIL" and topology == "FAIL":
+#         print("Possible Root Cause:")
+#         print("- PCIe topology / upstream switch / Bianca / mainboard issue")
+#         print("\nReason:")
+#         print("- E1.S speed drop detected.")
+#         print("- PCIe topology mismatch was also detected.")
+#         print("\nSuggested Action:")
+#         print("1. Compare current topology with golden node.")
+#         print("2. Check whether missing/down-trained E1.S shares branch with CX8/GPU.")
+#         print("3. Check PCIe switch path, Bianca, or mainboard.")
+
+#     elif e1s_speed == "FAIL" and (cx8_pcie == "FAIL" or gpu_pcie == "FAIL"):
+#         print("Possible Root Cause:")
+#         print("- Broader PCIe signal integrity / platform configuration issue")
+#         print("\nReason:")
+#         print("- E1.S has speed drop.")
+#         print("- CX8 or GPU PCIe also has abnormal link status.")
+#         print("\nSuggested Action:")
+#         print("1. Check PCIe training and BIOS PCIe settings.")
+#         print("2. Compare lspci -vv with good node.")
+#         print("3. Check upstream PCIe switch / board-level signal integrity.")
+
+#     elif e1s_health == "FAIL" and sensor_count == "FAIL":
+#         print("Possible Root Cause:")
+#         print("- BMC / FRU / sensor / platform reporting issue")
+#         print("\nReason:")
+#         print("- E1.S health failed and sensor count is also abnormal.")
+#         print("\nSuggested Action:")
+#         print("1. Run sensors/sensor_missing.py.")
+#         print("2. Check BMC/HMC/FRU data.")
+#         print("3. Confirm drive presence from both OS and BMC side.")
+
+#     elif e1s_speed == "PASS":
+#         print("Result:")
+#         print("- No E1.S speed drop detected by current automation.")
+#         print("\nSuggested Action:")
+#         print("1. Re-run the original failing test.")
+#         print("2. Check whether issue is intermittent.")
+#         print("3. Collect debug bundle if failure happens again.")
+
+#     else:
+#         print("Result:")
+#         print("- E1.S speed drop diagnosis is inconclusive.")
+#         print("\nSuggested Action:")
+#         print("1. Run e1s/e1s_debug_bundle.py.")
+#         print("2. Compare current topology with golden topology.")
+#         print("3. Check dmesg for NVMe / PCIe / AER errors.")
 
 def main():
     print("===== E1.S SPEED DROP ORCHESTRATOR =====\n")
