@@ -85,11 +85,11 @@ def main():
         print(f"Max Link     : {cap_speed} {cap_width}")
         print(f"Current Link : {cur_speed} {cur_width}")
 
-        if cur_speed == EXPECTED_SPEED and cur_width == EXPECTED_WIDTH:
+        if cur_speed == EXPECTED_GPU_PCIE_SPEED and cur_width == EXPECTED_GPU_PCIE_WIDTH:
             print("PASS: GPU PCIe link is normal\n")
         else:
             print("FAIL: GPU PCIe link mismatch")
-            print(f"Expected : {EXPECTED_SPEED} {EXPECTED_WIDTH}")
+            print(f"Expected : {EXPECTED_GPU_PCIE_SPEED} {EXPECTED_GPU_PCIE_WIDTH}")
             print(f"Actual   : {cur_speed} {cur_width}")
             print("Hint     : Check PCIe training, riser/baseboard, BIOS setting, or signal integrity\n")
             overall_pass = False
