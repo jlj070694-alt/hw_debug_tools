@@ -1,8 +1,23 @@
+# import subprocess
+# import re
+
+# EXPECTED_SPEED = "32GT/s"
+# EXPECTED_WIDTH = "x16"
+
+import os
+import sys
 import subprocess
 import re
 
-EXPECTED_SPEED = "32GT/s"
-EXPECTED_WIDTH = "x16"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import (
+    EXPECTED_CX8_PCIE_SPEED,
+    EXPECTED_CX8_PCIE_WIDTH
+)
 
 def run_command(command):
     return subprocess.run(
@@ -62,12 +77,12 @@ def main():
         print(f"Max Link : {cap_speed} {cap_width}")
         print(f"Current  : {cur_speed} {cur_width}")
 
-        if cur_speed == EXPECTED_SPEED and cur_width == EXPECTED_WIDTH:
+        if cur_speed == EXPECTED_CX8_PCIE_SPEED and cur_width == EXPECTED_CX8_PCIE_WIDTH:
             print("PASS: PCIe link is correct\n")
         else:
             print(
                 f"FAIL: PCIe link mismatch. "
-                f"Expected {EXPECTED_SPEED} {EXPECTED_WIDTH}, "
+                f"Expected {EXPECTED_CX8_PCIE_SPEED} {EXPECTED_CX8_PCIE_WIDTH}, "
                 f"but got {cur_speed} {cur_width}\n"
             )
             overall_pass = False
