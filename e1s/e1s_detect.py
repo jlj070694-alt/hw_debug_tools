@@ -1,6 +1,18 @@
-import subprocess
+# import subprocess
 
-EXPECTED_DRIVE_COUNT = 8
+# EXPECTED_DRIVE_COUNT = 8
+
+import os
+import sys
+import subprocess
+import re
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import EXPECTED_E1S_COUNT
 
 def run_command(command):
     return subprocess.run(
@@ -30,7 +42,7 @@ def main():
 
     detected_count = len(drives)
 
-    print(f"Expected Drive Count : {EXPECTED_DRIVE_COUNT}")
+    print(f"Expected Drive Count : {EXPECTED_E1S_COUNT}")
     print(f"Detected Drive Count : {detected_count}")
 
     print("\n===== DETECTED DRIVES =====")
@@ -40,10 +52,10 @@ def main():
 
     print("\n============================")
 
-    if detected_count == EXPECTED_DRIVE_COUNT:
+    if detected_count == EXPECTED_E1S_COUNT:
         print("PASS: All E1.S drives detected")
     else:
-        missing = EXPECTED_DRIVE_COUNT - detected_count
+        missing = EXPECTED_E1S_COUNT - detected_count
 
         print(
             f"FAIL: Missing {missing} drive(s)"

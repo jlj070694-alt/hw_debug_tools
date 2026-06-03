@@ -1,9 +1,25 @@
+# import subprocess
+# import re
+
+# EXPECTED_DRIVE_COUNT = 8
+# EXPECTED_SPEED = "32GT/s"
+# EXPECTED_WIDTH = "x4"
+
+import os
+import sys
 import subprocess
 import re
 
-EXPECTED_DRIVE_COUNT = 8
-EXPECTED_SPEED = "32GT/s"
-EXPECTED_WIDTH = "x4"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import (
+    EXPECTED_E1S_COUNT,
+    EXPECTED_E1S_PCIE_SPEED,
+    EXPECTED_E1S_PCIE_WIDTH
+)
 
 def run_command(command):
     return subprocess.run(
@@ -52,11 +68,11 @@ def main():
     detected_count = len(devices)
     overall_pass = True
 
-    print(f"Expected Drive Count : {EXPECTED_DRIVE_COUNT}")
+    print(f"Expected Drive Count : {EXPECTED_E1S_COUNT}")
     print(f"Detected Drive Count : {detected_count}")
 
-    if detected_count != EXPECTED_DRIVE_COUNT:
-        print(f"FAIL: Expected {EXPECTED_DRIVE_COUNT}, but detected {detected_count}")
+    if detected_count != EXPECTED_E1S_COUNT:
+        print(f"FAIL: Expected {EXPECTED_E1S_COUNT}, but detected {detected_count}")
         overall_pass = False
     else:
         print("PASS: Drive count is correct")
@@ -71,7 +87,7 @@ def main():
 
         status = "PASS"
 
-        if speed != EXPECTED_SPEED or width != EXPECTED_WIDTH:
+        if speed != EXPECTED_E1S_PCIE_SPEED or width != EXPECTED_E1S_PCIE_WIDTH:
             status = "FAIL"
             overall_pass = False
 

@@ -1,8 +1,23 @@
+# import subprocess
+# import re
+
+# EXPECTED_SPEED = "32GT/s"
+# EXPECTED_WIDTH = "x4"
+
+import os
+import sys
 import subprocess
 import re
 
-EXPECTED_SPEED = "32GT/s"
-EXPECTED_WIDTH = "x4"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import (
+    EXPECTED_E1S_PCIE_SPEED,
+    EXPECTED_E1S_PCIE_WIDTH
+)
 
 def run_command(command):
     return subprocess.run(
@@ -63,12 +78,12 @@ def main():
         print(f"Max Link     : {max_speed} {max_width}")
         print(f"Current Link : {current_speed} {current_width}")
 
-        if current_speed == EXPECTED_SPEED and current_width == EXPECTED_WIDTH:
+        if current_speed == EXPECTED_E1S_PCIE_SPEED and current_width == EXPECTED_E1S_PCIE_WIDTH:
             print("PASS: Link speed/width normal\n")
         else:
             print(
                 f"FAIL: Speed drop detected. "
-                f"Expected {EXPECTED_SPEED} {EXPECTED_WIDTH}, "
+                f"Expected {EXPECTED_E1S_PCIE_SPEED} {EXPECTED_E1S_PCIE_WIDTH}, "
                 f"but got {current_speed} {current_width}\n"
             )
             overall_pass = False
