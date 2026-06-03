@@ -1,10 +1,22 @@
-import subprocess
+# import subprocess
+# import os
+# from datetime import datetime
+
 import os
-from datetime import datetime
+import sys
+import subprocess
+import re
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import EXPECTED_SENSOR_COUNT
 
 REPORT_DIR = "logs"
 
-EXPECTED_SENSOR_COUNT = 116
+# EXPECTED_SENSOR_COUNT = 116
 
 def run_command(command):
     result = subprocess.run(
