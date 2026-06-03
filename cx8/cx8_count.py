@@ -1,6 +1,18 @@
-import subprocess
+# import subprocess
 
-EXPECTED_CX8_COUNT = 8
+# EXPECTED_CX8_COUNT = 8
+
+import os
+import sys
+import subprocess
+import re
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import EXPECTED_CX8_COUNT
 
 def run_command(command):
     return subprocess.run(
