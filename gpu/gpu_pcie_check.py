@@ -1,8 +1,23 @@
+# import subprocess
+# import re
+
+# EXPECTED_SPEED = "64GT/s"
+# EXPECTED_WIDTH = "x16"
+
+import os
+import sys
 import subprocess
 import re
 
-EXPECTED_SPEED = "64GT/s"
-EXPECTED_WIDTH = "x16"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import (
+    EXPECTED_GPU_PCIE_SPEED,
+    EXPECTED_GPU_PCIE_WIDTH
+)
 
 def run_command(command):
     return subprocess.run(
