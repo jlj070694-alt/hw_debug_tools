@@ -1,6 +1,7 @@
 import subprocess
+from config.gb300_config import EXPECTED_GPU_COUNT
 
-EXPECTED_GPU_COUNT = 4
+
 
 def run_command(command):
     result = subprocess.run(

@@ -13,7 +13,7 @@ def run_command(command):
 def main():
     print("===== CX8 COUNT CHECK =====")
 
-    result = run_command("lspci | grep -i -E 'ConnectX|Mellanox|NVIDIA.*Ethernet'")
+    result = run_command("lspci | grep -i 'Ethernet controller' | grep -i 'ConnectX-8'")
 
     if result.returncode != 0 or not result.stdout.strip():
         print("FAIL: No CX8 / Mellanox NIC detected")
