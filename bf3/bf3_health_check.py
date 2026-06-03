@@ -1,10 +1,26 @@
-import subprocess
+# import subprocess
+# import os
+# import re
+
+# EXPECTED_BF3_COUNT = 1
+# EXPECTED_SPEED = "32GT/s"
+# EXPECTED_WIDTH = "x16"
+
 import os
+import sys
+import subprocess
 import re
 
-EXPECTED_BF3_COUNT = 1
-EXPECTED_SPEED = "32GT/s"
-EXPECTED_WIDTH = "x16"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import (
+    EXPECTED_BF3_COUNT,
+    EXPECTED_BF3_PCIE_SPEED,
+    EXPECTED_BF3_PCIE_WIDTH
+)
 
 def run_command(command):
     return subprocess.run(
@@ -52,12 +68,12 @@ def check_pcie():
         speed = match.group(1)
         width = match.group(2)
 
-        if speed == EXPECTED_SPEED and width == EXPECTED_WIDTH:
+        if speed == EXPECTED_BF3_PCIE_SPEED and width == EXPECTED_BF3_PCIE_WIDTH:
             messages.append(f"{bdf}: PASS: PCIe {speed} {width}")
         else:
             messages.append(
                 f"{bdf}: FAIL: PCIe mismatch. "
-                f"Expected {EXPECTED_SPEED} {EXPECTED_WIDTH}, got {speed} {width}"
+                f"Expected {EXPECTED_BF3_PCIE_SPEED} {EXPECTED_BF3_PCIE_WIDTH}, got {speed} {width}"
             )
             overall_pass = False
 

@@ -1,8 +1,23 @@
+# import subprocess
+# import re
+
+# EXPECTED_SPEED = "32GT/s"
+# EXPECTED_WIDTH = "x16"
+
+import os
+import sys
 import subprocess
 import re
 
-EXPECTED_SPEED = "32GT/s"
-EXPECTED_WIDTH = "x16"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import (
+    EXPECTED_BF3_PCIE_SPEED,
+    EXPECTED_BF3_PCIE_WIDTH
+)
 
 def run_command(command):
     return subprocess.run(
@@ -70,11 +85,11 @@ def main():
         print(f"Max Link     : {cap_speed} {cap_width}")
         print(f"Current Link : {cur_speed} {cur_width}")
 
-        if cur_speed == EXPECTED_SPEED and cur_width == EXPECTED_WIDTH:
+        if cur_speed == EXPECTED_BF3_PCIE_SPEED and cur_width == EXPECTED_BF3_PCIE_WIDTH:
             print("PASS: BF3 PCIe link is normal\n")
         else:
             print("FAIL: BF3 PCIe link mismatch")
-            print(f"Expected : {EXPECTED_SPEED} {EXPECTED_WIDTH}")
+            print(f"Expected : {EXPECTED_BF3_PCIE_SPEED} {EXPECTED_BF3_PCIE_WIDTH}")
             print(f"Actual   : {cur_speed} {cur_width}")
             print("Hint     : Check BF3 slot, riser, BIOS PCIe setting, firmware, or signal integrity\n")
             overall_pass = False
