@@ -1,6 +1,16 @@
+# import subprocess
+# from config.gb300_config import EXPECTED_GPU_COUNT
+import os
+import sys
 import subprocess
-from config.gb300_config import EXPECTED_GPU_COUNT
+import re
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config.gb300_config import EXPECTED_GPU_COUNT
 
 
 def run_command(command):
