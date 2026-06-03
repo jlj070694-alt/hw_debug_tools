@@ -1,6 +1,25 @@
 import os
 import subprocess
 
+def select_platform():
+    platforms = {
+        "1": "GB300",
+        "2": "GB200",
+        "3": "H100",
+        "4": "B200",
+    }
+
+    print("\n===== SELECT PLATFORM =====")
+    for key, value in platforms.items():
+        print(f"{key}. {value}")
+
+    choice = input("\nSelect platform: ").strip()
+
+    platform = platforms.get(choice, "GB300")
+    os.environ["HW_DEBUG_PLATFORM"] = platform
+
+    print(f"\nSelected Platform: {platform}")
+
 def run_script(script_path):
     print(f"\nRunning {script_path}...\n")
 
@@ -56,6 +75,8 @@ def main():
         "nccl",
         "sensors"
     ]
+
+    select_platform()
 
     while True:
 
