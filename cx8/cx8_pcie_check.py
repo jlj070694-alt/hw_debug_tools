@@ -1,9 +1,3 @@
-# import subprocess
-# import re
-
-# EXPECTED_SPEED = "32GT/s"
-# EXPECTED_WIDTH = "x16"
-
 import os
 import sys
 import subprocess
@@ -18,14 +12,10 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+EXPECTED_CX8_COUNT = cfg.EXPECTED_CX8_COUNT
 EXPECTED_CX8_PCIE_SPEED = cfg.EXPECTED_CX8_PCIE_SPEED
 EXPECTED_CX8_PCIE_WIDTH = cfg.EXPECTED_CX8_PCIE_WIDTH
 
-
-# from config.gb300_config import (
-#     EXPECTED_CX8_PCIE_SPEED,
-#     EXPECTED_CX8_PCIE_WIDTH
-# )
 
 def run_command(command):
     return subprocess.run(
@@ -35,44 +25,76 @@ def run_command(command):
         text=True
     )
 
+
 def get_cx8_bdfs():
-    result = run_command("lspci | grep -i -E 'ConnectX|Mellanox|NVIDIA.*Ethernet'")
-    
+    result = run_command(
+        "lspci | grep -i 'Ethernet controller' | grep -i 'ConnectX-8'"
+    )
+
     bdfs = []
-    for line in result.stdout.strip().splitlines():
-        bdf = line.split()[0]
-        bdfs.append(bdf)
+
+    if result.returncode == 0 and result.stdout.strip():
+        for line in result.stdout.strip().splitlines():
+            bdf = line.split()[0]
+            bdfs.append(bdf)
 
     return bdfs
+
 
 def check_pcie_link(bdf):
     result = run_command(f"lspci -s {bdf} -vv")
 
     output = result.stdout
 
-    lnkcap = re.search(r"LnkCap:.*Speed ([0-9.]+GT/s).*Width (x[0-9]+)", output)
-    lnksta = re.search(r"LnkSta:.*Speed ([0-9.]+GT/s).*Width (x[0-9]+)", output)
+    lnkcap = re.search(
+        r"LnkCap:.*Speed ([0-9.]+GT/s).*Width (x[0-9]+)",
+        output
+    )
 
-    return lnkcap, lnksta, output
+    lnksta = re.search(
+        r"LnkSta:.*Speed ([0-9.]+GT/s).*Width (x[0-9]+)",
+        output
+    )
+
+    return lnkcap, lnksta
+
 
 def main():
     print("===== CX8 PCIE CHECK =====\n")
 
     bdfs = get_cx8_bdfs()
+    detected_count = len(bdfs)
 
-    if not bdfs:
-        print("FAIL: No CX8 device found")
-        return
+    print(f"Expected CX8 Count : {EXPECTED_CX8_COUNT}")
+    print(f"Detected CX8 Count : {detected_count}\n")
+
+    if detected_count == 0:
+        if EXPECTED_CX8_COUNT == 0:
+            print("PASS: No CX8 expected on this platform")
+            return
+        else:
+            print(
+                f"FAIL: Expected {EXPECTED_CX8_COUNT} CX8 device(s), "
+                f"but detected 0"
+            )
+            return
+
+    if detected_count != EXPECTED_CX8_COUNT:
+        print(
+            f"WARNING: Expected {EXPECTED_CX8_COUNT} CX8 device(s), "
+            f"but detected {detected_count}"
+        )
+        print("Continue checking detected CX8 PCIe links...\n")
 
     overall_pass = True
 
     for bdf in bdfs:
-        lnkcap, lnksta, _ = check_pcie_link(bdf)
+        lnkcap, lnksta = check_pcie_link(bdf)
 
         print(f"Device: {bdf}")
 
         if not lnksta:
-            print("FAIL: Cannot parse LnkSta")
+            print("FAIL: Cannot parse LnkSta\n")
             overall_pass = False
             continue
 
@@ -85,22 +107,29 @@ def main():
         print(f"Max Link : {cap_speed} {cap_width}")
         print(f"Current  : {cur_speed} {cur_width}")
 
-        if cur_speed == EXPECTED_CX8_PCIE_SPEED and cur_width == EXPECTED_CX8_PCIE_WIDTH:
+        if (
+            cur_speed == EXPECTED_CX8_PCIE_SPEED
+            and cur_width == EXPECTED_CX8_PCIE_WIDTH
+        ):
             print("PASS: PCIe link is correct\n")
         else:
+            print("FAIL: PCIe link mismatch")
             print(
-                f"FAIL: PCIe link mismatch. "
-                f"Expected {EXPECTED_CX8_PCIE_SPEED} {EXPECTED_CX8_PCIE_WIDTH}, "
-                f"but got {cur_speed} {cur_width}\n"
+                f"Expected : {EXPECTED_CX8_PCIE_SPEED} "
+                f"{EXPECTED_CX8_PCIE_WIDTH}"
             )
+            print(f"Actual   : {cur_speed} {cur_width}\n")
             overall_pass = False
 
     print("==============================")
 
-    if overall_pass:
+    if overall_pass and detected_count == EXPECTED_CX8_COUNT:
         print("PASS: All CX8 PCIe links are correct")
+    elif overall_pass and detected_count != EXPECTED_CX8_COUNT:
+        print("FAIL: CX8 PCIe links look good, but CX8 count mismatch")
     else:
         print("FAIL: One or more CX8 PCIe links have issue")
+
 
 if __name__ == "__main__":
     main()
