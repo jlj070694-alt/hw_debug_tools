@@ -1,11 +1,6 @@
-# import subprocess
-
-# EXPECTED_DRIVE_COUNT = 8
-
 import os
 import sys
 import subprocess
-import re
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,7 +13,6 @@ cfg = load_config()
 
 EXPECTED_E1S_COUNT = cfg.EXPECTED_E1S_COUNT
 
-# from config.gb300_config import EXPECTED_E1S_COUNT
 
 def run_command(command):
     return subprocess.run(
@@ -28,44 +22,49 @@ def run_command(command):
         text=True
     )
 
+
 def main():
 
     print("===== E1.S DETECTION CHECK =====\n")
 
     result = run_command("nvme list")
 
-    if result.returncode != 0:
-        print("FAIL: nvme command failed")
-        print(result.stderr)
-        return
+    e1s_lines = []
 
-    drives = []
+    if result.returncode == 0 and result.stdout.strip():
 
-    for line in result.stdout.splitlines():
+        for line in result.stdout.splitlines():
 
-        if "/dev/nvme" in line:
-            drives.append(line)
+            if "/dev/nvme" in line:
+                e1s_lines.append(line)
 
-    detected_count = len(drives)
+    e1s_count = len(e1s_lines)
 
-    print(f"Expected Drive Count : {EXPECTED_E1S_COUNT}")
-    print(f"Detected Drive Count : {detected_count}")
+    print(f"Expected E1.S count: {EXPECTED_E1S_COUNT}")
+    print(f"Detected E1.S count: {e1s_count}")
 
-    print("\n===== DETECTED DRIVES =====")
+    if e1s_count == EXPECTED_E1S_COUNT:
 
-    for drive in drives:
-        print(drive)
+        print("PASS: E1.S count is correct")
 
-    print("\n============================")
-
-    if detected_count == EXPECTED_E1S_COUNT:
-        print("PASS: All E1.S drives detected")
     else:
-        missing = EXPECTED_E1S_COUNT - detected_count
 
         print(
-            f"FAIL: Missing {missing} drive(s)"
+            f"FAIL: Expected {EXPECTED_E1S_COUNT}, "
+            f"but detected {e1s_count}"
         )
+
+    print("\n===== E1.S LIST =====")
+
+    if e1s_lines:
+
+        for drive in e1s_lines:
+            print(drive)
+
+    else:
+
+        print("No E1.S detected")
+
 
 if __name__ == "__main__":
     main()

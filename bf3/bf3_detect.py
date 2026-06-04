@@ -1,11 +1,6 @@
-# import subprocess
-
-# EXPECTED_BF3_COUNT = 1
-
 import os
 import sys
 import subprocess
-import re
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,6 +13,7 @@ cfg = load_config()
 
 EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
 
+
 def run_command(command):
     return subprocess.run(
         command,
@@ -26,31 +22,47 @@ def run_command(command):
         text=True
     )
 
+
 def main():
+
     print("===== BF3 DETECTION CHECK =====\n")
 
-    result = run_command("lspci | grep -i -E 'bluefield|bf3|dpu'")
+    result = run_command(
+        "lspci | grep -i -E 'BlueField|BF3|DPU'"
+    )
 
-    if result.returncode != 0 or not result.stdout.strip():
-        print("FAIL: No BF3 / BlueField device detected")
-        return
+    bf3_lines = []
 
-    bf3_lines = result.stdout.strip().splitlines()
+    if result.returncode == 0 and result.stdout.strip():
+        bf3_lines = result.stdout.strip().splitlines()
+
     bf3_count = len(bf3_lines)
 
-    print(f"Expected BF3 Count : {EXPECTED_BF3_COUNT}")
-    print(f"Detected BF3 Count : {bf3_count}")
-
-    print("\n===== BF3 DEVICE LIST =====")
-    for line in bf3_lines:
-        print(line)
-
-    print("\n==============================")
+    print(f"Expected BF3 count: {EXPECTED_BF3_COUNT}")
+    print(f"Detected BF3 count: {bf3_count}")
 
     if bf3_count == EXPECTED_BF3_COUNT:
-        print("PASS: BF3 detection check passed")
+
+        print("PASS: BF3 count is correct")
+
     else:
-        print(f"FAIL: Expected {EXPECTED_BF3_COUNT}, but detected {bf3_count}")
+
+        print(
+            f"FAIL: Expected {EXPECTED_BF3_COUNT}, "
+            f"but detected {bf3_count}"
+        )
+
+    print("\n===== BF3 LIST =====")
+
+    if bf3_lines:
+
+        for bf3 in bf3_lines:
+            print(bf3)
+
+    else:
+
+        print("No BF3 detected")
+
 
 if __name__ == "__main__":
     main()

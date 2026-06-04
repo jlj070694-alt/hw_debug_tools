@@ -33,12 +33,11 @@ def main():
 
     result = run_command("lspci | grep -i 'Ethernet controller' | grep -i 'ConnectX-8'")
 
-    if result.returncode != 0 or not result.stdout.strip():
-        print("FAIL: No CX8 / Mellanox NIC detected")
-        print(result.stderr)
-        return
+    cx8_lines = []
 
-    cx8_lines = result.stdout.strip().splitlines()
+    if result.returncode == 0 and result.stdout.strip():
+        cx8_lines = result.stdout.strip().splitlines()
+
     cx8_count = len(cx8_lines)
 
     print(f"Detected CX8 count: {cx8_count}")
