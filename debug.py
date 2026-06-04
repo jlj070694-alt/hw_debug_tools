@@ -69,10 +69,11 @@ def submenu(folder):
 def main():
 
     folders = [
+        "bf3",
         "cx8",
         "e1s",
         "gpu",
-        "nccl",
+        "pcie",
         "sensors"
     ]
 
