@@ -12,7 +12,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from config.gb300_config import EXPECTED_BF3_COUNT
+from config.plateform_config import load_config
+
+cfg = load_config()
+
+EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
 
 def run_command(command):
     return subprocess.run(
