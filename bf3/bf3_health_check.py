@@ -15,12 +15,19 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+from config.platform_config import load_config
 
-from config.gb300_config import (
-    EXPECTED_BF3_COUNT,
-    EXPECTED_BF3_PCIE_SPEED,
-    EXPECTED_BF3_PCIE_WIDTH
-)
+cfg = load_config()
+
+EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
+EXPECTED_BF3_PCIE_SPEED = cfg.EXPECTED_BF3_PCIE_SPEED
+EXPECTED_BF3_PCIE_WIDTH = cfg.EXPECTED_BF3_PCIE_WIDTH
+
+# from config.gb300_config import (
+#     EXPECTED_BF3_COUNT,
+#     EXPECTED_BF3_PCIE_SPEED,
+#     EXPECTED_BF3_PCIE_WIDTH
+# )
 
 def run_command(command):
     return subprocess.run(
