@@ -14,10 +14,17 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from config.gb300_config import (
-    EXPECTED_E1S_PCIE_SPEED,
-    EXPECTED_E1S_PCIE_WIDTH
-)
+from config.platfrom_config import load_config
+
+cfg = load_config()
+
+EXPECTED_E1S_PCIE_SPEED = cfg.EXPECTED_E1S_PCIE_SPEED
+EXPECTED_E1S_PCIE_WIDTH = cfg.EXPECTED_E1S_PCIE_WIDTH
+
+# from config.gb300_config import (
+#     EXPECTED_E1S_PCIE_SPEED,
+#     EXPECTED_E1S_PCIE_WIDTH
+# )
 
 
 def run_command(command):
