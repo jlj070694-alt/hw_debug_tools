@@ -35,7 +35,7 @@ def run_command(command):
     )
 
 def get_gpu_bdfs():
-    result = run_command("lspci | grep -i -E 'NVIDIA.*H100|NVIDIA.*GPU|3D controller|VGA compatible controller'")
+    result = run_command("lspci | grep -i 'NVIDIA' | grep -i '3D controller'")
 
     bdfs = []
 

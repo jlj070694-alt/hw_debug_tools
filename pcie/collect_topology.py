@@ -11,7 +11,7 @@ COMMANDS = {
     "Full lspci": "lspci",
     "NVMe Devices": "lspci | grep -i 'Non-Volatile memory'",
     "CX8 / Mellanox Devices": "lspci | grep -i -E 'ConnectX|Mellanox|NVIDIA.*Ethernet'",
-    "GPU Devices": "lspci | grep -i -E 'NVIDIA.*H100|NVIDIA.*GPU|3D controller|VGA compatible controller'",
+    "GPU Devices": "lspci | grep -i 'NVIDIA' | grep -i '3D controller'",
     "BF3 / BlueField Devices": "lspci | grep -i -E 'BlueField|BF3|DPU'",
     "NVMe List": "nvme list",
     "NVIDIA-SMI": "nvidia-smi -L",

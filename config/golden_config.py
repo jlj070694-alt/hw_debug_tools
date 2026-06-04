@@ -33,7 +33,7 @@ def get_gpu_count():
 
 def get_gpu_pcie():
     result = run_command(
-        "lspci | grep -i -E 'NVIDIA.*H100|NVIDIA.*GB|NVIDIA.*GPU|3D controller|VGA compatible controller'"
+        "lspci | grep -i 'NVIDIA' | grep -i '3D controller'"
     )
 
     for line in result.stdout.splitlines():

@@ -5,7 +5,7 @@ import os
 DEVICE_PATTERNS = {
     "NVMe": r"Non-Volatile memory",
     "CX8": r"ConnectX|Mellanox|NVIDIA.*Ethernet",
-    "GPU": r"NVIDIA.*H100|NVIDIA.*GPU|3D controller|VGA compatible controller",
+    "GPU": r"NVIDIA.*3D controller",
     "BF3": r"BlueField|BF3|DPU",
 }
 
