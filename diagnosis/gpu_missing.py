@@ -10,6 +10,7 @@ CHECKS = {
     "GPU PCIe": "gpu/gpu_pcie_check.py",
     "GPU XID": "gpu/gpu_xid_check.py",
     "PCIe Topology Compare": "pcie/compare_topology.py",
+    "BF3 Detection": "bf3/bf3_detect.py",
     "CX8 Count": "cx8/cx8_count.py",
     "E1.S Detection": "e1s/e1s_detect.py",
     "Sensor Count": "sensors/sensor_count.py",
