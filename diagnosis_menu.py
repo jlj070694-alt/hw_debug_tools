@@ -1,6 +1,26 @@
 import os
 import subprocess
 
+
+def select_platform():
+    platforms = {
+        "1": "GB300",
+        "2": "GB200",
+        "3": "H100",
+        "4": "B200",
+    }
+
+    print("\n===== SELECT PLATFORM =====")
+    for key, value in platforms.items():
+        print(f"{key}. {value}")
+
+    choice = input("\nSelect platform: ").strip()
+
+    platform = platforms.get(choice, "GB300")
+    os.environ["HW_DEBUG_PLATFORM"] = platform
+
+    print(f"\nSelected Platform: {platform}")
+
 DIAGNOSIS_FOLDER = "diagnosis"
 
 MENU_ITEMS = {
@@ -58,6 +78,8 @@ def show_menu():
     print("0. Exit")
 
 def main():
+    select_platform()
+    
     while True:
         show_menu()
 
