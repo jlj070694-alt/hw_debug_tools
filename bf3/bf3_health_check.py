@@ -151,6 +151,11 @@ def check_errors():
 def main():
     print("===== BF3 HEALTH CHECK =====\n")
 
+    if EXPECTED_BF3_COUNT == 0:
+        print("SKIP: This platform does not have BF3")
+        print("PASS: BF3 health check skipped")
+        return
+
     checks = {
         "Detection": check_detect,
         "PCIe": check_pcie,
