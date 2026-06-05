@@ -12,6 +12,7 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+HAS_CX8 = getattr(cfg, "HAS_CX8", False)
 EXPECTED_CX8_COUNT = cfg.EXPECTED_CX8_COUNT
 EXPECTED_CX8_PCIE_SPEED = cfg.EXPECTED_CX8_PCIE_SPEED
 EXPECTED_CX8_PCIE_WIDTH = cfg.EXPECTED_CX8_PCIE_WIDTH
@@ -61,6 +62,10 @@ def check_pcie_link(bdf):
 
 def main():
     print("===== CX8 PCIE CHECK =====\n")
+
+    if not HAS_CX8:
+        print("SKIP: This platform does not have CX8")
+        return True    
 
     bdfs = get_cx8_bdfs()
     detected_count = len(bdfs)
