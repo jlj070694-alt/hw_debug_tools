@@ -87,6 +87,55 @@ def get_cx8_pcie():
 
     return "Unknown", "Unknown"
 
+def get_interface_bdf(iface):
+    device_path = f"/sys/class/net/{iface}/device"
+
+    if not os.path.exists(device_path):
+        return None
+
+    real_path = os.path.realpath(device_path)
+    return os.path.basename(real_path)
+
+
+def is_cx8_interface(iface):
+    bdf = get_interface_bdf(iface)
+
+    if not bdf:
+        return False
+
+    result = run_command(f"lspci -s {bdf}")
+    text = result.stdout.lower()
+
+    return (
+        "ethernet controller" in text
+        and "connectx-8" in text
+    )
+
+
+def get_cx8_interfaces():
+    result = run_command("ls /sys/class/net")
+
+    interfaces = []
+
+    for iface in result.stdout.split():
+        if is_cx8_interface(iface):
+            interfaces.append(iface)
+
+    return sorted(interfaces)
+
+
+def get_cx8_fw():
+    interfaces = get_cx8_interfaces()
+
+    for iface in interfaces:
+        result = run_command(f"ethtool -i {iface}")
+
+        for line in result.stdout.splitlines():
+            if "firmware-version:" in line:
+                return line.split(":", 1)[1].strip()
+
+    return "N/A"
+
 def get_bf3_count():
     result = run_command("lspci | grep -i -E 'BlueField|BF3|DPU'")
     return len(result.stdout.strip().splitlines()) if result.stdout.strip() else 0
@@ -104,6 +153,23 @@ def get_bf3_pcie():
             return match.group(1), match.group(2)
 
     return "Unknown", "Unknown"
+
+def get_bf3_fw():
+    result = run_command("ls /sys/class/net")
+
+    for iface in result.stdout.split():
+        ethtool_result = run_command(f"ethtool -i {iface}")
+
+        if (
+            "BlueField" in ethtool_result.stdout
+            or "ConnectX-7" in ethtool_result.stdout
+            or "mlx5_core" in ethtool_result.stdout
+        ):
+            for line in ethtool_result.stdout.splitlines():
+                if "firmware-version:" in line:
+                    return line.split(":", 1)[1].strip()
+
+    return "N/A"
 
 def get_sensor_count():
     result = run_command("ipmitool sdr elist")
@@ -133,12 +199,16 @@ def write_config(platform, data):
         f.write(f'EXPECTED_E1S_PCIE_WIDTH = "{data["e1s_width"]}"\n\n')
 
         f.write("# CX8\n")
+        f.write(f"HAS_CX8 = {data['cx8_count'] > 0}\n")
         f.write(f"EXPECTED_CX8_COUNT = {data['cx8_count']}\n")
         f.write(f'EXPECTED_CX8_PCIE_SPEED = "{data["cx8_speed"]}"\n')
-        f.write(f'EXPECTED_CX8_PCIE_WIDTH = "{data["cx8_width"]}"\n\n')
+        f.write(f'EXPECTED_CX8_PCIE_WIDTH = "{data["cx8_width"]}"\n')
+        f.write(f'EXPECTED_CX8_FW = "{data["cx8_fw"]}"\n\n')
 
         f.write("# BF3\n")
+        f.write(f'HAS_BF3 = {data["bf3_count"] > 0}\n')
         f.write(f"EXPECTED_BF3_COUNT = {data['bf3_count']}\n")
+        f.write(f'EXPECTED_BF3_FW = "{data["bf3_fw"]}"\n')
         f.write(f'EXPECTED_BF3_PCIE_SPEED = "{data["bf3_speed"]}"\n')
         f.write(f'EXPECTED_BF3_PCIE_WIDTH = "{data["bf3_width"]}"\n\n')
 
@@ -166,10 +236,12 @@ def main():
     print("Collecting CX8 config...")
     data["cx8_count"] = get_cx8_count()
     data["cx8_speed"], data["cx8_width"] = get_cx8_pcie()
+    data["cx8_fw"] = get_cx8_fw()
 
     print("Collecting BF3 config...")
     data["bf3_count"] = get_bf3_count()
     data["bf3_speed"], data["bf3_width"] = get_bf3_pcie()
+    data["bf3_fw"] = get_bf3_fw()
 
     print("Collecting Sensor config...")
     data["sensor_count"] = get_sensor_count()

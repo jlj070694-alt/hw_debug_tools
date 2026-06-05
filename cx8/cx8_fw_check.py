@@ -12,6 +12,7 @@ from config.platform_config import load_config
 cfg = load_config()
 
 EXPECTED_CX8_COUNT = cfg.EXPECTED_CX8_COUNT
+EXPECTED_CX8_FW = getattr(cfg, "EXPECTED_CX8_FW", "N/A")
 
 
 def run_command(command):
@@ -68,6 +69,7 @@ def main():
 
     print(f"Expected CX8 Count : {EXPECTED_CX8_COUNT}")
     print(f"Detected CX8 Count : {detected_count}\n")
+    print(f"Expected CX8 FW    : {EXPECTED_CX8_FW}\n")
 
     if detected_count == 0:
         if EXPECTED_CX8_COUNT == 0:
@@ -104,14 +106,30 @@ def main():
             overall_pass = False
             continue
 
-        for line in result.stdout.splitlines():
-            if (
-                "driver:" in line
-                or "version:" in line
-                or "firmware-version:" in line
-                or "bus-info:" in line
-            ):
-                print(line)
+        fw_version = "Unknown"
+
+    for line in result.stdout.splitlines():
+        if (
+            "driver:" in line
+            or "version:" in line
+            or "firmware-version:" in line
+            or "bus-info:" in line
+        ):
+            print(line)
+
+        if "firmware-version:" in line:
+            fw_version = line.split(":", 1)[1].strip()
+
+    if EXPECTED_CX8_FW == "N/A":
+        print("WARNING: Expected CX8 firmware is not defined in config\n")
+        overall_pass = False
+    elif EXPECTED_CX8_FW in fw_version:
+        print("FW Check : PASS\n")
+    else:
+        print("FW Check : FAIL")
+        print(f"Expected : {EXPECTED_CX8_FW}")
+        print(f"Actual   : {fw_version}\n")
+        overall_pass = False
 
     print("\n==============================")
 
