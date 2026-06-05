@@ -11,6 +11,7 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+HAS_BF3 = getattr(cfg, "HAS_BF3", False)
 EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
 
 
@@ -27,6 +28,10 @@ def main():
 
     print("===== BF3 DETECTION CHECK =====\n")
 
+    if not HAS_BF3:
+        print("SKIP: This platform does not have BF3")
+        return True
+    
     result = run_command(
         "lspci | grep -i -E 'BlueField|BF3|DPU'"
     )

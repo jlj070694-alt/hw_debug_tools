@@ -12,6 +12,7 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+HAS_BF3 = getattr(cfg, "HAS_BF3", False)
 EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
 EXPECTED_BF3_PCIE_SPEED = cfg.EXPECTED_BF3_PCIE_SPEED
 EXPECTED_BF3_PCIE_WIDTH = cfg.EXPECTED_BF3_PCIE_WIDTH
@@ -61,6 +62,10 @@ def check_pcie_link(bdf):
 
 def main():
     print("===== BF3 PCIE CHECK =====\n")
+
+    if not HAS_BF3:
+        print("SKIP: This platform does not have BF3")
+        return True
 
     bdfs = get_bf3_bdfs()
     detected_count = len(bdfs)
