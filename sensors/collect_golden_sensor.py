@@ -2,8 +2,21 @@ import os
 import subprocess
 from datetime import datetime
 
-EXPECTED_DIR = "sensors/expected"
-LOG_DIR = "logs"
+# EXPECTED_DIR = "sensors/expected"
+# LOG_DIR = "logs"
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+EXPECTED_DIR = os.path.join(
+    PROJECT_ROOT,
+    "sensors",
+    "expected"
+)
+
+LOG_DIR = os.path.join(
+    PROJECT_ROOT,
+    "logs"
+)
 
 def run_command(command):
     return subprocess.run(
