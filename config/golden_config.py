@@ -2,7 +2,14 @@ import subprocess
 import os
 import re
 
-CONFIG_DIR = "config"
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+
+CONFIG_DIR = os.path.join(
+    PROJECT_ROOT,
+    "config"
+)
 
 def run_command(command):
     return subprocess.run(
