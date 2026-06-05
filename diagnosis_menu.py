@@ -1,25 +1,13 @@
 import os
+import sys
 import subprocess
 
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-def select_platform():
-    platforms = {
-        "1": "GB300",
-        "2": "GB200",
-        "3": "H100",
-        "4": "B200",
-    }
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-    print("\n===== SELECT PLATFORM =====")
-    for key, value in platforms.items():
-        print(f"{key}. {value}")
-
-    choice = input("\nSelect platform: ").strip()
-
-    platform = platforms.get(choice, "GB300")
-    os.environ["HW_DEBUG_PLATFORM"] = platform
-
-    print(f"\nSelected Platform: {platform}")
+from config.platform_config import select_platform, load_config
 
 DIAGNOSIS_FOLDER = "diagnosis"
 
@@ -79,7 +67,8 @@ def show_menu():
 
 def main():
     select_platform()
-    
+    load_config()
+
     while True:
         show_menu()
 
