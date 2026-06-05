@@ -19,6 +19,7 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+HAS_BF3 = getattr(cfg, "HAS_BF3", False)
 EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
 EXPECTED_BF3_PCIE_SPEED = cfg.EXPECTED_BF3_PCIE_SPEED
 EXPECTED_BF3_PCIE_WIDTH = cfg.EXPECTED_BF3_PCIE_WIDTH
@@ -150,6 +151,10 @@ def check_errors():
 
 def main():
     print("===== BF3 HEALTH CHECK =====\n")
+
+    if not HAS_BF3:
+        print("SKIP: This platform does not have BF3")
+        return True
 
     if EXPECTED_BF3_COUNT == 0:
         print("SKIP: This platform does not have BF3")
