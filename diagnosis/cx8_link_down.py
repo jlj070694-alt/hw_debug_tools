@@ -32,6 +32,8 @@ def analyze_output(output):
         return "WARNING"
     if "PASS" in text:
         return "PASS"
+    if "SKIP" in text:
+        return "SKIP"
 
     return "UNKNOWN"
 

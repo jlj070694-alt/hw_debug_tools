@@ -11,6 +11,7 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+HAS_CX8 = getattr(cfg, "HAS_CX8", False)
 EXPECTED_CX8_COUNT = cfg.EXPECTED_CX8_COUNT
 REQUIRE_CX8_LINK_UP = getattr(cfg, "REQUIRE_CX8_LINK_UP", True)
 
@@ -69,6 +70,10 @@ def check_link_status(iface):
 
 def main():
     print("===== CX8 LINK STATUS CHECK =====\n")
+
+    if not HAS_CX8:
+        print("SKIP: This platform does not have CX8")
+        return True  
 
     interfaces = get_cx8_interfaces()
     detected_count = len(interfaces)

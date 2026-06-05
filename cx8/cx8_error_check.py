@@ -11,6 +11,7 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+HAS_CX8 = getattr(cfg, "HAS_CX8", False)
 EXPECTED_CX8_COUNT = cfg.EXPECTED_CX8_COUNT
 
 ERROR_KEYWORDS = [
@@ -71,6 +72,10 @@ def get_cx8_interfaces():
 
 def main():
     print("===== CX8 ERROR CHECK =====\n")
+
+    if not HAS_CX8:
+        print("SKIP: This platform does not have CX8")
+        return True  
 
     bdfs = get_cx8_bdfs()
     interfaces = get_cx8_interfaces()
