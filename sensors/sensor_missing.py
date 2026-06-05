@@ -10,11 +10,12 @@ if PROJECT_ROOT not in sys.path:
 from config.platform_config import load_config, get_platform
 
 cfg = load_config()
+PLATFORM = get_platform()
 
 SENSOR_EXPECTED_FILE = getattr(
     cfg,
     "EXPECTED_SENSOR_FILE",
-    f"sensors/expected/{get_platform().lower()}_expected_sensors.txt"
+    f"sensors/expected/{PLATFORM.lower()}_expected_sensors.txt"
 )
 
 def run_command(command):
@@ -60,7 +61,7 @@ def get_current_sensors():
 
 def main():
     print("===== SENSOR MISSING CHECK =====\n")
-    print(f"Platform             : {get_platform()}")
+    print(f"Platform             : {PLATFORM}")
     print(f"Expected Sensor File : {get_expected_file_path()}\n")
 
     expected = load_expected_sensors()
