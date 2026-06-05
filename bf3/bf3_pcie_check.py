@@ -1,9 +1,3 @@
-# import subprocess
-# import re
-
-# EXPECTED_SPEED = "32GT/s"
-# EXPECTED_WIDTH = "x16"
-
 import os
 import sys
 import subprocess
@@ -18,13 +12,10 @@ from config.platform_config import load_config
 
 cfg = load_config()
 
+EXPECTED_BF3_COUNT = cfg.EXPECTED_BF3_COUNT
 EXPECTED_BF3_PCIE_SPEED = cfg.EXPECTED_BF3_PCIE_SPEED
 EXPECTED_BF3_PCIE_WIDTH = cfg.EXPECTED_BF3_PCIE_WIDTH
 
-# from config.gb300_config import (
-#     EXPECTED_BF3_PCIE_SPEED,
-#     EXPECTED_BF3_PCIE_WIDTH
-# )
 
 def run_command(command):
     return subprocess.run(
@@ -34,49 +25,73 @@ def run_command(command):
         text=True
     )
 
+
 def get_bf3_bdfs():
-    result = run_command("lspci | grep -i -E 'bluefield|bf3|dpu'")
+    result = run_command(
+        "lspci | grep -i 'Ethernet controller' | grep -i -E 'BlueField-3|ConnectX-7'"
+    )
 
     bdfs = []
 
-    for line in result.stdout.strip().splitlines():
-        bdf = line.split()[0]
-        desc = " ".join(line.split()[1:])
-        bdfs.append((bdf, desc))
+    if result.returncode == 0 and result.stdout.strip():
+        for line in result.stdout.strip().splitlines():
+            bdf = line.split()[0]
+            bdfs.append(bdf)
 
     return bdfs
 
-def parse_pcie_link(bdf):
+
+def check_pcie_link(bdf):
     result = run_command(f"lspci -s {bdf} -vv")
+
+    output = result.stdout
 
     lnkcap = re.search(
         r"LnkCap:.*Speed ([0-9.]+GT/s).*Width (x[0-9]+)",
-        result.stdout
+        output
     )
 
     lnksta = re.search(
         r"LnkSta:.*Speed ([0-9.]+GT/s).*Width (x[0-9]+)",
-        result.stdout
+        output
     )
 
     return lnkcap, lnksta
 
+
 def main():
     print("===== BF3 PCIE CHECK =====\n")
 
-    devices = get_bf3_bdfs()
+    bdfs = get_bf3_bdfs()
+    detected_count = len(bdfs)
 
-    if not devices:
-        print("FAIL: No BF3 / BlueField device found")
-        return
+    print(f"Expected BF3 Count : {EXPECTED_BF3_COUNT}")
+    print(f"Detected BF3 Count : {detected_count}\n")
+
+    if detected_count == 0:
+        if EXPECTED_BF3_COUNT == 0:
+            print("PASS: No BF3 expected on this platform")
+            return
+        else:
+            print(
+                f"FAIL: Expected {EXPECTED_BF3_COUNT} BF3 device(s), "
+                f"but detected 0"
+            )
+            return
+
+    if detected_count != EXPECTED_BF3_COUNT:
+        print(
+            f"WARNING: Expected {EXPECTED_BF3_COUNT} BF3 device(s), "
+            f"but detected {detected_count}"
+        )
+        print("Continue checking detected BF3 PCIe links...\n")
 
     overall_pass = True
 
-    for bdf, desc in devices:
-        print(f"Device : {bdf}")
-        print(f"Name   : {desc}")
+    for bdf in bdfs:
+        lnkcap, lnksta = check_pcie_link(bdf)
 
-        lnkcap, lnksta = parse_pcie_link(bdf)
+        print(f"Device: {bdf}")
 
         if not lnksta:
             print("FAIL: Cannot parse LnkSta\n")
@@ -89,24 +104,32 @@ def main():
         cur_speed = lnksta.group(1)
         cur_width = lnksta.group(2)
 
-        print(f"Max Link     : {cap_speed} {cap_width}")
-        print(f"Current Link : {cur_speed} {cur_width}")
+        print(f"Max Link : {cap_speed} {cap_width}")
+        print(f"Current  : {cur_speed} {cur_width}")
 
-        if cur_speed == EXPECTED_BF3_PCIE_SPEED and cur_width == EXPECTED_BF3_PCIE_WIDTH:
-            print("PASS: BF3 PCIe link is normal\n")
+        if (
+            cur_speed == EXPECTED_BF3_PCIE_SPEED
+            and cur_width == EXPECTED_BF3_PCIE_WIDTH
+        ):
+            print("PASS: PCIe link is correct\n")
         else:
-            print("FAIL: BF3 PCIe link mismatch")
-            print(f"Expected : {EXPECTED_BF3_PCIE_SPEED} {EXPECTED_BF3_PCIE_WIDTH}")
-            print(f"Actual   : {cur_speed} {cur_width}")
-            print("Hint     : Check BF3 slot, riser, BIOS PCIe setting, firmware, or signal integrity\n")
+            print("FAIL: PCIe link mismatch")
+            print(
+                f"Expected : {EXPECTED_BF3_PCIE_SPEED} "
+                f"{EXPECTED_BF3_PCIE_WIDTH}"
+            )
+            print(f"Actual   : {cur_speed} {cur_width}\n")
             overall_pass = False
 
     print("==============================")
 
-    if overall_pass:
-        print("PASS: All BF3 PCIe links are normal")
+    if overall_pass and detected_count == EXPECTED_BF3_COUNT:
+        print("PASS: All BF3 PCIe links are correct")
+    elif overall_pass and detected_count != EXPECTED_BF3_COUNT:
+        print("FAIL: BF3 PCIe links look good, but BF3 count mismatch")
     else:
         print("FAIL: One or more BF3 PCIe links have issue")
+
 
 if __name__ == "__main__":
     main()
