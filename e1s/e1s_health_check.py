@@ -55,7 +55,7 @@ def get_bdf(dev):
     dev_name = dev.split("/")[-1]
     result = run_command(f"readlink -f /sys/block/{dev_name}/device")
     match = re.search(r"([0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7])", result.stdout)
-    return match.group(1) if match else "Unknown"
+    return match.group(-1) if match else "Unknown"
 
 def get_pcie_link(bdf):
     if bdf == "Unknown":
