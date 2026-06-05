@@ -34,10 +34,19 @@ def main():
     issue_count = 0
 
     for line in lines:
-        lower_line = line.lower()
+        if "|" not in line:
+            continue
 
-        if any(keyword in lower_line for keyword in BAD_KEYWORDS):
-            print(line)
+        parts = [p.strip() for p in line.split("|")]
+
+        if len(parts) < 3:
+            continue
+
+        sensor_name = parts[0]
+        status = parts[2].lower()
+
+        if status in BAD_KEYWORDS:
+            print(f"{sensor_name}: {status}")
             issue_count += 1
 
     print("\n==============================")
