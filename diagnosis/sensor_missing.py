@@ -1,8 +1,14 @@
-import subprocess
 import os
+import sys
+import subprocess
 from datetime import datetime
 
-LOG_DIR = "logs"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 
 CHECKS = {
     "Sensor Count": "sensors/sensor_count.py",
@@ -13,25 +19,54 @@ CHECKS = {
     "BF3 Health": "bf3/bf3_health_check.py",
 }
 
+
 def run_script(script_path):
+    full_path = os.path.join(PROJECT_ROOT, script_path)
+
     result = subprocess.run(
-        ["python3", script_path],
+        ["python3", full_path],
         capture_output=True,
         text=True
     )
+
     return result.stdout + "\n" + result.stderr
+
 
 def analyze_output(output):
     text = output.upper()
 
+    if "SKIP" in text:
+        return "SKIP"
+
     if "FAIL" in text:
         return "FAIL"
+
     if "WARNING" in text:
         return "WARNING"
+
     if "PASS" in text:
         return "PASS"
 
     return "UNKNOWN"
+
+
+def print_summary(results):
+    print("\n===== CHECK SUMMARY =====\n")
+
+    for status in ["PASS", "WARNING", "FAIL", "SKIP", "UNKNOWN"]:
+        count = list(results.values()).count(status)
+        print(f"{status:<8}: {count}")
+
+    skipped_items = [
+        name for name, status in results.items()
+        if status == "SKIP"
+    ]
+
+    if skipped_items:
+        print("\nSkipped Items:")
+        for item in skipped_items:
+            print(f"- {item}")
+
 
 def generate_suggestion(results):
     print("\n===== SENSOR MISSING DIAGNOSIS =====\n")
@@ -42,6 +77,10 @@ def generate_suggestion(results):
     topology = results.get("PCIe Topology Compare")
     gpu_health = results.get("GPU Health")
     bf3_health = results.get("BF3 Health")
+
+    if sensor_count == "SKIP":
+        print("SKIP: Sensor diagnosis is skipped for this platform.")
+        return
 
     if sensor_count == "FAIL" and sensor_missing == "FAIL":
         print("Possible Root Cause:")
@@ -95,6 +134,10 @@ def generate_suggestion(results):
         print("2. Check DPU OS / firmware.")
         print("3. Check BF3 related BMC sensors.")
 
+    elif bf3_health == "SKIP":
+        print("Info:")
+        print("- BF3 health check was skipped because this platform does not have BF3.")
+
     elif sensor_count == "PASS":
         print("Result:")
         print("- Sensor count looks normal.")
@@ -110,13 +153,14 @@ def generate_suggestion(results):
         print("2. Compare with golden sensor list.")
         print("3. Check BMC/HMC/FRU data.")
 
+
 def main():
     print("===== SENSOR MISSING ORCHESTRATOR =====\n")
 
     os.makedirs(LOG_DIR, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"{LOG_DIR}/sensor_missing_{timestamp}.txt"
+    log_file = os.path.join(LOG_DIR, f"sensor_missing_{timestamp}.txt")
 
     results = {}
 
@@ -139,7 +183,9 @@ def main():
 
     print(f"\nFull log saved to: {log_file}")
 
+    print_summary(results)
     generate_suggestion(results)
+
 
 if __name__ == "__main__":
     main()
