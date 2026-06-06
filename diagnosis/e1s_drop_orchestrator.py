@@ -1,27 +1,40 @@
 import subprocess
 from datetime import datetime
 import os
+import sys
 
-LOG_DIR = "logs"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 
 CHECKS = {
     "E1.S Detection": "e1s/e1s_detect.py",
     "E1.S Speed": "e1s/e1s_speed_check.py",
     "E1.S PCIe": "e1s/e1s_pcie_check.py",
     "E1.S Health": "e1s/e1s_health_check.py",
+
     "CX8 Count": "cx8/cx8_count.py",
     "CX8 PCIe": "cx8/cx8_pcie_check.py",
+
     "GPU Count": "gpu/gpu_count.py",
     "GPU PCIe": "gpu/gpu_pcie_check.py",
+
     "Sensor Count": "sensors/sensor_count.py",
     "Sensor Missing": "sensors/sensor_missing.py",
+
     "BF3 Detection": "bf3/bf3_detect.py",
     "BF3 PCIe": "bf3/bf3_pcie_check.py",
 }
 
+
 def run_script(script_path):
+    full_path = os.path.join(PROJECT_ROOT, script_path)
+
     result = subprocess.run(
-        ["python3", script_path],
+        ["python3", full_path],
         capture_output=True,
         text=True
     )
@@ -29,17 +42,24 @@ def run_script(script_path):
     output = result.stdout + "\n" + result.stderr
     return result.returncode, output
 
+
 def analyze_output(output):
     text = output.upper()
 
+    if "SKIP" in text:
+        return "SKIP"
+
     if "FAIL" in text:
         return "FAIL"
-    elif "WARNING" in text:
+
+    if "WARNING" in text:
         return "WARNING"
-    elif "PASS" in text:
+
+    if "PASS" in text:
         return "PASS"
-    else:
-        return "UNKNOWN"
+
+    return "UNKNOWN"
+
 
 def print_result(name, status):
     if status == "PASS":
@@ -48,8 +68,29 @@ def print_result(name, status):
         print(f"[FAIL]    {name}")
     elif status == "WARNING":
         print(f"[WARNING] {name}")
+    elif status == "SKIP":
+        print(f"[SKIP]    {name}")
     else:
         print(f"[UNKNOWN] {name}")
+
+
+def print_summary(results):
+    print("\n===== CHECK SUMMARY =====\n")
+
+    for status in ["PASS", "WARNING", "FAIL", "SKIP", "UNKNOWN"]:
+        count = list(results.values()).count(status)
+        print(f"{status:<8}: {count}")
+
+    skipped_items = [
+        name for name, status in results.items()
+        if status == "SKIP"
+    ]
+
+    if skipped_items:
+        print("\nSkipped Items:")
+        for item in skipped_items:
+            print(f"- {item}")
+
 
 def generate_suggestion(results):
     print("\n===== ROOT CAUSE SUGGESTION =====\n")
@@ -72,15 +113,16 @@ def generate_suggestion(results):
         print("- E1.S devices and CX8 devices are both abnormal.")
         print("- This suggests the issue may be upstream, not only the drive.")
         print("\nSuggested Action:")
+        print("- Run pcie/compare_topology.py.")
         print("- Compare lspci tree with a good node.")
-        print("- Check PCIe switch path.")
+        print("- Check whether missing E1.S and CX8 share the same PCIe branch.")
         print("- Consider Bianca/mainboard replacement if multiple downstream devices are missing.")
 
-    elif e1s_detect == "FAIL" and cx8_count in ["PASS", "WARNING"]:
+    elif e1s_detect == "FAIL" and cx8_count in ["PASS", "WARNING", "SKIP"]:
         print("Possible Root Cause:")
         print("- E1.S drive / slot / backplane / cable issue")
         print("\nReason:")
-        print("- E1.S detection failed, but CX8 looks normal.")
+        print("- E1.S detection failed, but CX8 is not showing a hard failure.")
         print("- This suggests the issue may be limited to the E1.S storage path.")
         print("\nSuggested Action:")
         print("- Swap the drive first.")
@@ -135,20 +177,30 @@ def generate_suggestion(results):
         print("- Compare with good node.")
         print("- Review BIOS and platform PCIe configuration.")
 
+    elif bf3_detect == "SKIP" and bf3_pcie == "SKIP":
+        print("No BF3 checks were required for this platform.")
+        print("\nSuggested Action:")
+        print("- Continue diagnosis based on E1.S / CX8 / GPU / Sensor results.")
+
     else:
         print("No clear root cause found from current checks.")
         print("\nSuggested Action:")
         print("- Re-run the failing test.")
         print("- Run e1s/e1s_debug_bundle.py.")
+        print("- Run pcie/compare_topology.py.")
         print("- Compare this node with a known good node.")
         print("- Check test log timestamp against dmesg.")
+
 
 def main():
     print("===== E1.S DROP ORCHESTRATOR =====\n")
 
     os.makedirs(LOG_DIR, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"{LOG_DIR}/e1s_drop_orchestrator_{timestamp}.txt"
+    log_file = os.path.join(
+        LOG_DIR,
+        f"e1s_drop_orchestrator_{timestamp}.txt"
+    )
 
     results = {}
 
@@ -158,6 +210,7 @@ def main():
 
         for name, script in CHECKS.items():
             print(f"Running {name}...")
+
             log.write(f"\n===== {name} =====\n")
             log.write(f"Script: {script}\n\n")
 
@@ -172,7 +225,9 @@ def main():
 
     print(f"\nFull log saved to: {log_file}")
 
+    print_summary(results)
     generate_suggestion(results)
+
 
 if __name__ == "__main__":
     main()
