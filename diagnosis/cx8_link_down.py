@@ -1,8 +1,14 @@
-import subprocess
 import os
+import sys
+import subprocess
 from datetime import datetime
 
-LOG_DIR = "logs"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 
 CHECKS = {
     "CX8 Link Status": "cx8/cx8_link_status.py",
@@ -15,27 +21,54 @@ CHECKS = {
     "Sensor Count Check": "sensors/sensor_count.py",
 }
 
+
 def run_script(script_path):
+    full_path = os.path.join(PROJECT_ROOT, script_path)
+
     result = subprocess.run(
-        ["python3", script_path],
+        ["python3", full_path],
         capture_output=True,
         text=True
     )
+
     return result.stdout + "\n" + result.stderr
+
 
 def analyze_output(output):
     text = output.upper()
 
-    if "FAIL" in text:
-        return "FAIL"
-    if "WARNING" in text:
-        return "WARNING"
-    if "PASS" in text:
-        return "PASS"
     if "SKIP" in text:
         return "SKIP"
 
+    if "FAIL" in text:
+        return "FAIL"
+
+    if "WARNING" in text:
+        return "WARNING"
+
+    if "PASS" in text:
+        return "PASS"
+
     return "UNKNOWN"
+
+
+def print_summary(results):
+    print("\n===== CHECK SUMMARY =====\n")
+
+    for status in ["PASS", "WARNING", "FAIL", "SKIP", "UNKNOWN"]:
+        count = list(results.values()).count(status)
+        print(f"{status:<8}: {count}")
+
+    skipped_items = [
+        name for name, status in results.items()
+        if status == "SKIP"
+    ]
+
+    if skipped_items:
+        print("\nSkipped Items:")
+        for item in skipped_items:
+            print(f"- {item}")
+
 
 def generate_suggestion(results):
     print("\n===== CX8 LINK DOWN DIAGNOSIS =====\n")
@@ -48,6 +81,10 @@ def generate_suggestion(results):
     topology = results.get("PCIe Topology Compare")
     gpu_pcie = results.get("GPU PCIe Check")
     sensor_count = results.get("Sensor Count Check")
+
+    if cx8_count == "SKIP":
+        print("SKIP: CX8 link down diagnosis is skipped for this platform.")
+        return
 
     if cx8_count == "FAIL":
         print("Possible Root Cause:")
@@ -93,6 +130,16 @@ def generate_suggestion(results):
         print("2. Look for Bad signal integrity / Negotiation failure / mlx5 errors.")
         print("3. Check firmware and driver version.")
         print("4. Re-run link test after reseating or replacing cable/OSFP.")
+
+    elif cx8_fw == "FAIL":
+        print("Possible Root Cause:")
+        print("- CX8 firmware mismatch")
+        print("\nReason:")
+        print("- CX8 firmware check failed compared with golden config.")
+        print("\nSuggested Action:")
+        print("1. Check expected CX8 firmware in platform config.")
+        print("2. Re-flash or update CX8 firmware if needed.")
+        print("3. Re-run cx8/cx8_fw_check.py.")
 
     elif topology == "FAIL":
         print("Possible Root Cause:")
@@ -140,13 +187,14 @@ def generate_suggestion(results):
         print("2. Run pcie/compare_topology.py.")
         print("3. Check cable, OSFP, peer port, and CX8 firmware.")
 
+
 def main():
     print("===== CX8 LINK DOWN ORCHESTRATOR =====\n")
 
     os.makedirs(LOG_DIR, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"{LOG_DIR}/cx8_link_down_{timestamp}.txt"
+    log_file = os.path.join(LOG_DIR, f"cx8_link_down_{timestamp}.txt")
 
     results = {}
 
@@ -169,7 +217,9 @@ def main():
 
     print(f"\nFull log saved to: {log_file}")
 
+    print_summary(results)
     generate_suggestion(results)
+
 
 if __name__ == "__main__":
     main()
