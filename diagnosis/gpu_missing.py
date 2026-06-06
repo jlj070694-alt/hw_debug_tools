@@ -1,40 +1,78 @@
-import subprocess
+
 import os
+import sys
+import subprocess
 from datetime import datetime
 
-LOG_DIR = "logs"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 
 CHECKS = {
     "GPU Count": "gpu/gpu_count.py",
     "GPU Health": "gpu/gpu_health.py",
     "GPU PCIe": "gpu/gpu_pcie_check.py",
     "GPU XID": "gpu/gpu_xid_check.py",
+
     "PCIe Topology Compare": "pcie/compare_topology.py",
+
     "BF3 Detection": "bf3/bf3_detect.py",
     "CX8 Count": "cx8/cx8_count.py",
     "E1.S Detection": "e1s/e1s_detect.py",
     "Sensor Count": "sensors/sensor_count.py",
 }
 
+
 def run_script(script_path):
+    full_path = os.path.join(PROJECT_ROOT, script_path)
+
     result = subprocess.run(
-        ["python3", script_path],
+        ["python3", full_path],
         capture_output=True,
         text=True
     )
+
     return result.stdout + "\n" + result.stderr
+
 
 def analyze_output(output):
     text = output.upper()
 
+    if "SKIP" in text:
+        return "SKIP"
+
     if "FAIL" in text:
         return "FAIL"
+
     if "WARNING" in text:
         return "WARNING"
+
     if "PASS" in text:
         return "PASS"
 
     return "UNKNOWN"
+
+
+def print_summary(results):
+    print("\n===== CHECK SUMMARY =====\n")
+
+    for status in ["PASS", "WARNING", "FAIL", "SKIP", "UNKNOWN"]:
+        count = list(results.values()).count(status)
+        print(f"{status:<8}: {count}")
+
+    skipped_items = [
+        name for name, status in results.items()
+        if status == "SKIP"
+    ]
+
+    if skipped_items:
+        print("\nSkipped Items:")
+        for item in skipped_items:
+            print(f"- {item}")
+
 
 def generate_suggestion(results):
     print("\n===== GPU MISSING DIAGNOSIS =====\n")
@@ -47,6 +85,10 @@ def generate_suggestion(results):
     cx8_count = results.get("CX8 Count")
     e1s_detect = results.get("E1.S Detection")
     sensor_count = results.get("Sensor Count")
+
+    if gpu_count == "SKIP":
+        print("SKIP: GPU missing diagnosis is skipped for this platform.")
+        return
 
     if gpu_count == "FAIL" and topology == "FAIL":
         print("Possible Root Cause:")
@@ -72,7 +114,9 @@ def generate_suggestion(results):
         print("3. Check dmesg | grep -i nvrm.")
         print("4. Reinstall/reload NVIDIA driver if needed.")
 
-    elif gpu_count == "FAIL" and (cx8_count == "FAIL" or e1s_detect == "FAIL"):
+    elif gpu_count == "FAIL" and (
+        cx8_count == "FAIL" or e1s_detect == "FAIL"
+    ):
         print("Possible Root Cause:")
         print("- Platform-level PCIe issue")
         print("\nReason:")
@@ -130,13 +174,14 @@ def generate_suggestion(results):
         print("2. Run pcie/compare_topology.py.")
         print("3. Check nvidia-smi, lspci, and dmesg manually.")
 
+
 def main():
     print("===== GPU MISSING ORCHESTRATOR =====\n")
 
     os.makedirs(LOG_DIR, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"{LOG_DIR}/gpu_missing_{timestamp}.txt"
+    log_file = os.path.join(LOG_DIR, f"gpu_missing_{timestamp}.txt")
 
     results = {}
 
@@ -159,7 +204,10 @@ def main():
 
     print(f"\nFull log saved to: {log_file}")
 
+    print_summary(results)
     generate_suggestion(results)
+
 
 if __name__ == "__main__":
     main()
+
