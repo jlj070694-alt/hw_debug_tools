@@ -48,6 +48,8 @@ def analyze_output(output):
         return "WARNING"
     if "PASS" in text:
         return "PASS"
+    if "SKIP" in text:
+        return "SKIP"
 
     return "UNKNOWN"
 
@@ -56,7 +58,7 @@ def print_status(name, status):
 
 def generate_summary(results):
     print("\n===== PLATFORM HEALTH SUMMARY =====\n")
-
+    skip_items = [name for name, status in results.items() if status == "SKIP"]
     fail_items = [name for name, status in results.items() if status == "FAIL"]
     warning_items = [name for name, status in results.items() if status == "WARNING"]
     unknown_items = [name for name, status in results.items() if status == "UNKNOWN"]
@@ -66,6 +68,12 @@ def generate_summary(results):
     print(f"WARNING      : {len(warning_items)}")
     print(f"FAIL         : {len(fail_items)}")
     print(f"UNKNOWN      : {len(unknown_items)}")
+    print(f"SKIP         : {len(skip_items)}")
+
+    if skip_items:
+        print("\nSkipped Items:")
+        for item in skip_items:
+            print(f"- {item}")
 
     if fail_items:
         print("\nFailed Items:")
