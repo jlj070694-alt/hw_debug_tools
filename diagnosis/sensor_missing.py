@@ -134,9 +134,25 @@ def generate_suggestion(results):
         print("2. Check DPU OS / firmware.")
         print("3. Check BF3 related BMC sensors.")
 
-    elif bf3_health == "SKIP":
-        print("Info:")
-        print("- BF3 health check was skipped because this platform does not have BF3.")
+    # elif bf3_health == "SKIP":
+    #     print("Info:")
+    #     print("- BF3 health check was skipped because this platform does not have BF3.")
+
+    elif (
+        sensor_count == "PASS"
+        and sensor_missing == "PASS"
+        and sensor_health == "PASS"
+    ):
+        print("PASS: Sensor check passed.")
+        print("\nReason:")
+        print("- Sensor count matches golden value.")
+        print("- No missing sensors were found.")
+        print("- Sensor health check passed.")
+
+        if bf3_health == "SKIP":
+            print("\nInfo:")
+            print("- BF3 health check was skipped because this platform does not have BF3.")
+
 
     elif sensor_count == "PASS":
         print("Result:")
